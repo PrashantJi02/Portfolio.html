@@ -1,0 +1,1890 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prashant | The Backrooms Portfolio</title>
+  <style>
+    /* ═══════════════════════════════════════════════════════════════
+       RESET & GLOBALS
+       ═══════════════════════════════════════════════════════════════ */
+    *,
+    *::before,
+    *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: auto;
+    }
+
+    body {
+      font-family: 'Courier New', monospace;
+      background: #0a0a05;
+      color: #d4c98e;
+      overflow-x: hidden;
+      cursor: default;
+    }
+
+    ::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #0a0a05;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #5a4d20;
+      border-radius: 3px;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       CAMERA WRAPPER — everything shakes via this
+       ═══════════════════════════════════════════════════════════════ */
+    #camera {
+      transition: transform 0.06s ease-out;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       ROOM BASE
+       ═══════════════════════════════════════════════════════════════ */
+    .room {
+      position: relative;
+      min-height: 100vh;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       3-D ROOM BOX (perspective room with walls, floor, ceiling)
+       ═══════════════════════════════════════════════════════════════ */
+    .room-box {
+      position: absolute;
+      inset: 0;
+      perspective: 600px;
+      overflow: hidden;
+    }
+
+    .room-interior {
+      position: absolute;
+      inset: 0;
+      transform-style: preserve-3d;
+    }
+
+    /* Back wall */
+    .wall-back {
+      position: absolute;
+      inset: 0;
+    }
+
+    /* Floor */
+    .floor-plane {
+      position: absolute;
+      bottom: 0;
+      left: -20%;
+      right: -20%;
+      height: 45%;
+      transform-origin: bottom center;
+    }
+
+    /* Ceiling */
+    .ceiling-plane {
+      position: absolute;
+      top: 0;
+      left: -20%;
+      right: -20%;
+      height: 20%;
+      transform-origin: top center;
+    }
+
+    /* Left wall */
+    .wall-left {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      width: 18%;
+    }
+
+    /* Right wall */
+    .wall-right {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      right: 0;
+      width: 18%;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       ROOM 0 — NORMAL START (Liminal room with sofa)
+       ═══════════════════════════════════════════════════════════════ */
+    .room-start {
+      min-height: 110vh;
+      background: #2a2518;
+    }
+
+    .room-start .wall-back {
+      background: linear-gradient(to bottom,
+          #c8b890 0%, #b8a878 40%, #a89868 60%, #8a7a58 100%);
+    }
+
+    .room-start .floor-plane {
+      background: linear-gradient(to bottom,
+          #6a5d3a 0%, #5a4d2a 40%, #4a3d1a 100%);
+    }
+
+    .room-start .ceiling-plane {
+      background: linear-gradient(to bottom,
+          #d8c8a0 0%, #c8b890 100%);
+    }
+
+    .room-start .wall-left {
+      background: linear-gradient(to right,
+          #7a6a48 0%, #a89868 40%, transparent 100%);
+    }
+
+    .room-start .wall-right {
+      background: linear-gradient(to left,
+          #6a5a38 0%, #a89868 40%, transparent 100%);
+    }
+
+    /* Baseboard trim */
+    .baseboard {
+      position: absolute;
+      bottom: 45%;
+      left: 0;
+      right: 0;
+      height: 12px;
+      background: #5a4828;
+      box-shadow: 0 -1px 0 #7a6840;
+    }
+
+    /* Crown molding */
+    .crown {
+      position: absolute;
+      top: 19.5%;
+      left: 0;
+      right: 0;
+      height: 8px;
+      background: #b8a878;
+      box-shadow: 0 1px 0 #8a7a58;
+    }
+
+    /* ── Windows ──────────────────────────────────────────── */
+    .window-row {
+      position: absolute;
+      top: 6%;
+      left: 10%;
+      right: 10%;
+      height: 14%;
+      display: flex;
+      gap: 4%;
+      z-index: 2;
+    }
+
+    .window-pane {
+      flex: 1;
+      background: linear-gradient(135deg,
+          rgba(180, 220, 180, 0.25) 0%,
+          rgba(200, 230, 180, 0.15) 50%,
+          rgba(160, 200, 160, 0.1) 100%);
+      border: 4px solid #6a5838;
+      position: relative;
+    }
+
+    .window-pane::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 3px;
+      background: #6a5838;
+      transform: translateX(-50%);
+    }
+
+    .window-pane::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 50%;
+      height: 3px;
+      background: #6a5838;
+    }
+
+    /* ── Light beams from windows ─────────────────────────── */
+    .light-beam {
+      position: absolute;
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    .light-beam-1 {
+      top: 20%;
+      right: 10%;
+      width: 200px;
+      height: 350px;
+      background: linear-gradient(160deg,
+          rgba(255, 250, 200, 0.12) 0%,
+          rgba(255, 240, 180, 0.06) 40%,
+          transparent 100%);
+      transform: skewX(-20deg);
+    }
+
+    .light-beam-2 {
+      top: 18%;
+      right: 25%;
+      width: 120px;
+      height: 300px;
+      background: linear-gradient(155deg,
+          rgba(200, 220, 255, 0.08) 0%,
+          rgba(180, 200, 255, 0.04) 50%,
+          transparent 100%);
+      transform: skewX(-15deg);
+    }
+
+    /* Prismatic rainbow refraction */
+    .light-rainbow {
+      top: 22%;
+      right: 15%;
+      width: 160px;
+      height: 280px;
+      background: linear-gradient(160deg,
+          rgba(255, 100, 100, 0.04) 0%,
+          rgba(255, 200, 50, 0.05) 20%,
+          rgba(100, 255, 100, 0.04) 40%,
+          rgba(50, 150, 255, 0.05) 60%,
+          rgba(150, 50, 255, 0.04) 80%,
+          transparent 100%);
+      transform: skewX(-18deg);
+      filter: blur(3px);
+    }
+
+    /* ── Armchair (SVG) ────────────────────────────────────── */
+    .armchair {
+      position: absolute;
+      bottom: 42%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 200px;
+      z-index: 4;
+      filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.5));
+    }
+
+    /* ── Bookshelf ─────────────────────────────────────────── */
+    .bookshelf {
+      position: absolute;
+      bottom: 45%;
+      left: 6%;
+      width: 100px;
+      z-index: 4;
+      filter: drop-shadow(4px 4px 12px rgba(0, 0, 0, 0.5));
+    }
+
+    /* ── Door (dark doorway on the right) ──────────────────── */
+    .doorway {
+      position: absolute;
+      bottom: 45%;
+      right: 5%;
+      width: 70px;
+      height: 150px;
+      background: linear-gradient(to bottom, #0a0805 0%, #050402 100%);
+      border: 3px solid #5a4828;
+      border-bottom: none;
+      border-radius: 2px 2px 0 0;
+      z-index: 4;
+      box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.8);
+    }
+
+    /* ── Start room overlay content ────────────────────────── */
+    .start-content {
+      position: relative;
+      z-index: 10;
+      text-align: center;
+      transform: translateY(-40px);
+    }
+
+    .start-content h1 {
+      font-family: 'Georgia', serif;
+      font-size: 3rem;
+      color: #e8d8a8;
+      text-shadow: 0 0 30px rgba(200, 180, 120, 0.4),
+        0 2px 4px rgba(0, 0, 0, 0.5);
+      letter-spacing: 0.06em;
+    }
+
+    .start-content .subtitle {
+      font-size: 0.85rem;
+      color: #a09060;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      margin-top: 8px;
+    }
+
+    .start-content .hint {
+      margin-top: 40px;
+      font-size: 0.72rem;
+      color: #706840;
+      letter-spacing: 0.15em;
+      animation: pulse 2.5s infinite;
+    }
+
+    .start-content .hint .arrows {
+      display: block;
+      margin-top: 6px;
+      font-size: 1.2rem;
+      color: #908050;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 0.4;
+      }
+
+      50% {
+        opacity: 1;
+      }
+    }
+
+    /* ── Dust particles ────────────────────────────────────── */
+    .dust-container {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .dust {
+      position: absolute;
+      width: 2px;
+      height: 2px;
+      background: rgba(255, 240, 180, 0.4);
+      border-radius: 50%;
+      animation: dustFloat linear infinite;
+    }
+
+    @keyframes dustFloat {
+      0% {
+        transform: translate(0, 0) scale(1);
+        opacity: 0;
+      }
+
+      10% {
+        opacity: 0.6;
+      }
+
+      90% {
+        opacity: 0.3;
+      }
+
+      100% {
+        transform: translate(80px, -120px) scale(0.3);
+        opacity: 0;
+      }
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       NOCLIP TRANSITION
+       ═══════════════════════════════════════════════════════════════ */
+    .room-noclip {
+      min-height: 80vh;
+      background: linear-gradient(to bottom, #2a2518, #0d0c06, #0a0a04);
+    }
+
+    .noclip-inner {
+      position: relative;
+      z-index: 5;
+      text-align: center;
+    }
+
+    .glitch-text {
+      font-size: 3rem;
+      font-weight: 700;
+      color: #ff3030;
+      text-shadow:
+        3px 0 #0ff, -3px 0 #f0f, 0 3px #ff0;
+      animation: glitch 0.15s infinite;
+      letter-spacing: 0.2em;
+    }
+
+    @keyframes glitch {
+      0% {
+        text-shadow: 3px 0 #0ff, -3px 0 #f0f;
+        transform: translate(0);
+      }
+
+      25% {
+        text-shadow: -3px 2px #0ff, 3px -1px #f0f;
+        transform: translate(-3px, 1px);
+      }
+
+      50% {
+        text-shadow: 2px -3px #0ff, -1px 3px #f0f;
+        transform: translate(2px, -2px);
+      }
+
+      75% {
+        text-shadow: -2px 1px #0ff, 2px -2px #f0f;
+        transform: translate(1px, 1px);
+      }
+
+      100% {
+        text-shadow: 3px 0 #0ff, -3px 0 #f0f;
+        transform: translate(0);
+      }
+    }
+
+    .noclip-sub {
+      font-size: 0.78rem;
+      color: #706040;
+      letter-spacing: 0.3em;
+      margin-top: 16px;
+      animation: glitch 0.3s infinite reverse;
+    }
+
+    .noclip-desc {
+      font-size: 0.82rem;
+      color: #605530;
+      max-width: 360px;
+      margin: 24px auto 0;
+      line-height: 1.7;
+    }
+
+    /* Floor dissolve effect */
+    .floor-dissolve {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .dissolve-stripe {
+      position: absolute;
+      left: 0;
+      right: 0;
+      background: #0a0a04;
+      opacity: 0;
+      transition: opacity 1.2s ease;
+    }
+
+    /* Scanlines */
+    .scanlines {
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(to bottom,
+          transparent 0, transparent 2px,
+          rgba(0, 0, 0, 0.08) 2px, rgba(0, 0, 0, 0.08) 4px);
+      pointer-events: none;
+      z-index: 8;
+    }
+
+    /* VHS distortion bar */
+    .vhs-bar {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.06);
+      z-index: 9;
+      animation: vhsScan 3s linear infinite;
+    }
+
+    @keyframes vhsScan {
+      0% {
+        top: -4px;
+      }
+
+      100% {
+        top: 100%;
+      }
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       BACKROOMS ROOM TEMPLATE
+       ═══════════════════════════════════════════════════════════════ */
+    .backroom {
+      min-height: 110vh;
+    }
+
+    /* Wallpaper pattern */
+    .br-wallpaper {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+    }
+
+    .br-wall-back {
+      position: absolute;
+      inset: 0;
+    }
+
+    /* Stain layer */
+    .br-stains {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Floor */
+    .br-floor {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 38%;
+      z-index: 1;
+    }
+
+    /* Ceiling + lights */
+    .br-ceiling {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 18%;
+      z-index: 1;
+    }
+
+    /* Fluorescent light */
+    .fl-bar {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 160px;
+      height: 18px;
+      background: #fffff0;
+      border-radius: 3px;
+      box-shadow:
+        0 0 40px 12px rgba(255, 255, 220, 0.35),
+        0 0 100px 30px rgba(255, 255, 200, 0.12);
+      z-index: 2;
+    }
+
+    .fl-bar.flicker {
+      animation: lightFlicker 5s infinite;
+    }
+
+    .fl-bar.flicker2 {
+      animation: lightFlicker2 7s infinite;
+    }
+
+    @keyframes lightFlicker {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      47% {
+        opacity: 1;
+      }
+
+      48% {
+        opacity: 0.2;
+      }
+
+      49% {
+        opacity: 0.8;
+      }
+
+      50% {
+        opacity: 0.15;
+      }
+
+      51% {
+        opacity: 0.9;
+      }
+
+      52% {
+        opacity: 1;
+      }
+
+      77% {
+        opacity: 1;
+      }
+
+      78% {
+        opacity: 0.4;
+      }
+
+      79% {
+        opacity: 1;
+      }
+    }
+
+    @keyframes lightFlicker2 {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      30% {
+        opacity: 1;
+      }
+
+      31% {
+        opacity: 0.3;
+      }
+
+      32% {
+        opacity: 0.7;
+      }
+
+      33% {
+        opacity: 0.2;
+      }
+
+      35% {
+        opacity: 1;
+      }
+
+      62% {
+        opacity: 1;
+      }
+
+      63% {
+        opacity: 0.5;
+      }
+
+      64% {
+        opacity: 1;
+      }
+    }
+
+    /* Ambient glow from ceiling */
+    .br-glow {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* ── Room color variations ─────────────────────────────── */
+    /* Level 0 — Classic yellow backrooms */
+    .br-level0 .br-wall-back {
+      background: #c8b868;
+      background-image:
+        repeating-linear-gradient(90deg,
+          transparent 0, transparent 78px,
+          rgba(170, 150, 60, 0.4) 78px, rgba(170, 150, 60, 0.4) 80px),
+        repeating-linear-gradient(0deg,
+          transparent 0, transparent 78px,
+          rgba(170, 150, 60, 0.4) 78px, rgba(170, 150, 60, 0.4) 80px);
+    }
+
+    .br-level0 .br-floor {
+      background: linear-gradient(to bottom,
+          #8a7a40 0%, #6a5a28 50%, #4a3d15 100%);
+    }
+
+    .br-level0 .br-ceiling {
+      background: linear-gradient(to bottom,
+          #d0c070 0%, #c8b868 100%);
+    }
+
+    .br-level0 .br-stains {
+      background:
+        radial-gradient(ellipse at 25% 55%, rgba(80, 65, 15, 0.3) 0%, transparent 40%),
+        radial-gradient(ellipse at 70% 35%, rgba(70, 55, 10, 0.25) 0%, transparent 35%),
+        radial-gradient(ellipse at 50% 80%, rgba(90, 70, 20, 0.2) 0%, transparent 45%);
+    }
+
+    .br-level0 .br-glow {
+      background: radial-gradient(ellipse at 50% 15%,
+          rgba(255, 255, 200, 0.08) 0%, transparent 50%);
+    }
+
+    /* Level 1 — Darker, dirtier */
+    .br-level1 .br-wall-back {
+      background: #a89848;
+      background-image:
+        repeating-linear-gradient(90deg,
+          transparent 0, transparent 58px,
+          rgba(140, 120, 40, 0.4) 58px, rgba(140, 120, 40, 0.4) 60px),
+        repeating-linear-gradient(0deg,
+          transparent 0, transparent 58px,
+          rgba(140, 120, 40, 0.4) 58px, rgba(140, 120, 40, 0.4) 60px);
+    }
+
+    .br-level1 .br-floor {
+      background: linear-gradient(to bottom,
+          #706020 0%, #504818 50%, #3a3010 100%);
+    }
+
+    .br-level1 .br-ceiling {
+      background: linear-gradient(to bottom, #b0a050, #a89848);
+    }
+
+    .br-level1 .br-stains {
+      background:
+        radial-gradient(ellipse at 15% 40%, rgba(60, 50, 5, 0.4) 0%, transparent 45%),
+        radial-gradient(ellipse at 80% 65%, rgba(50, 40, 0, 0.35) 0%, transparent 40%),
+        radial-gradient(circle at 45% 30%, rgba(40, 30, 0, 0.2) 0%, transparent 30%);
+    }
+
+    .br-level1 .br-glow {
+      background: radial-gradient(ellipse at 50% 15%,
+          rgba(255, 255, 180, 0.06) 0%, transparent 50%);
+    }
+
+    /* Level 2 — Decayed, institutional */
+    .br-level2 .br-wall-back {
+      background: #887830;
+      background-image:
+        repeating-linear-gradient(90deg,
+          transparent 0, transparent 98px,
+          rgba(110, 95, 25, 0.45) 98px, rgba(110, 95, 25, 0.45) 100px),
+        repeating-linear-gradient(0deg,
+          transparent 0, transparent 98px,
+          rgba(110, 95, 25, 0.45) 98px, rgba(110, 95, 25, 0.45) 100px);
+    }
+
+    .br-level2 .br-floor {
+      background: linear-gradient(to bottom,
+          #584a18 0%, #3a3010 50%, #2a2208 100%);
+    }
+
+    .br-level2 .br-ceiling {
+      background: linear-gradient(to bottom, #908030, #887830);
+    }
+
+    .br-level2 .br-stains {
+      background:
+        radial-gradient(ellipse at 30% 50%, rgba(40, 30, 0, 0.45) 0%, transparent 50%),
+        radial-gradient(ellipse at 75% 25%, rgba(30, 20, 0, 0.4) 0%, transparent 40%);
+    }
+
+    .br-level2 .br-glow {
+      background: radial-gradient(ellipse at 50% 15%,
+          rgba(255, 255, 180, 0.04) 0%, transparent 50%);
+    }
+
+    /* Level 3 — Industrial, pipes */
+    .br-level3 .br-wall-back {
+      background: #605418;
+      background-image:
+        repeating-linear-gradient(90deg,
+          transparent 0, transparent 118px,
+          rgba(70, 60, 10, 0.5) 118px, rgba(70, 60, 10, 0.5) 120px),
+        repeating-linear-gradient(0deg,
+          transparent 0, transparent 118px,
+          rgba(70, 60, 10, 0.5) 118px, rgba(70, 60, 10, 0.5) 120px);
+    }
+
+    .br-level3 .br-floor {
+      background: linear-gradient(to bottom,
+          #3a3008 0%, #2a2005 50%, #1a1504 100%);
+    }
+
+    .br-level3 .br-ceiling {
+      background: linear-gradient(to bottom, #686018, #605418);
+    }
+
+    .br-level3 .br-stains {
+      background:
+        radial-gradient(ellipse at 20% 60%, rgba(30, 25, 0, 0.5) 0%, transparent 55%),
+        radial-gradient(ellipse at 85% 40%, rgba(20, 15, 0, 0.45) 0%, transparent 45%);
+    }
+
+    .br-level3 .br-glow {
+      background: radial-gradient(ellipse at 50% 15%,
+          rgba(200, 200, 140, 0.03) 0%, transparent 50%);
+    }
+
+    /* Level 4 — Near-dark */
+    .br-level4 .br-wall-back {
+      background: #302a0a;
+      background-image:
+        repeating-linear-gradient(90deg,
+          transparent 0, transparent 58px,
+          rgba(35, 30, 5, 0.5) 58px, rgba(35, 30, 5, 0.5) 60px),
+        repeating-linear-gradient(0deg,
+          transparent 0, transparent 58px,
+          rgba(35, 30, 5, 0.5) 58px, rgba(35, 30, 5, 0.5) 60px);
+    }
+
+    .br-level4 .br-floor {
+      background: linear-gradient(to bottom,
+          #201a05 0%, #151004 50%, #0a0802 100%);
+    }
+
+    .br-level4 .br-ceiling {
+      background: linear-gradient(to bottom, #3a3210, #302a0a);
+    }
+
+    .br-level4 .br-stains {
+      background:
+        radial-gradient(ellipse at 40% 50%, rgba(10, 8, 0, 0.5) 0%, transparent 60%);
+    }
+
+    .br-level4 .br-glow {
+      background: radial-gradient(ellipse at 50% 50%,
+          rgba(180, 160, 60, 0.03) 0%, transparent 60%);
+    }
+
+    /* ── Pipe decorations ──────────────────────────────────── */
+    .pipe {
+      position: absolute;
+      z-index: 2;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+
+    .pipe-h {
+      height: 16px;
+      background: linear-gradient(to bottom, #5a4a18, #3a3008, #5a4a18);
+    }
+
+    .pipe-v {
+      width: 16px;
+      background: linear-gradient(to right, #5a4a18, #3a3008, #5a4a18);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       ENTITIES
+       ═══════════════════════════════════════════════════════════════ */
+    /* Shadowy figure silhouette */
+    .entity {
+      position: absolute;
+      z-index: 3;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 1.5s ease;
+    }
+
+    .entity.visible {
+      opacity: 1;
+    }
+
+    /* Standing figure */
+    .entity-standing {
+      width: 40px;
+    }
+
+    /* Crouching figure */
+    .entity-crouching {
+      width: 50px;
+    }
+
+    /* Eyes in darkness */
+    .entity-eyes {
+      position: absolute;
+      z-index: 3;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 2s ease;
+    }
+
+    .entity-eyes.visible {
+      opacity: 1;
+    }
+
+    .eye {
+      width: 6px;
+      height: 4px;
+      background: radial-gradient(ellipse, #fff8a0 30%, transparent 100%);
+      border-radius: 50%;
+      position: absolute;
+      box-shadow: 0 0 8px 2px rgba(255, 248, 160, 0.5);
+    }
+
+    /* Smile entity */
+    .entity-smile {
+      position: absolute;
+      z-index: 3;
+      font-size: 2rem;
+      color: rgba(255, 248, 160, 0.0);
+      pointer-events: none;
+      transition: color 3s ease;
+    }
+
+    .entity-smile.visible {
+      color: rgba(255, 248, 160, 0.25);
+      text-shadow: 0 0 20px rgba(255, 248, 160, 0.15);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       CONTENT CARDS
+       ═══════════════════════════════════════════════════════════════ */
+    .card {
+      position: relative;
+      z-index: 10;
+      background: rgba(15, 12, 4, 0.88);
+      border: 1px solid rgba(200, 180, 80, 0.25);
+      border-radius: 3px;
+      padding: 36px 32px;
+      max-width: 520px;
+      width: 90%;
+      backdrop-filter: blur(8px);
+      box-shadow:
+        0 0 50px rgba(0, 0, 0, 0.5),
+        inset 0 0 30px rgba(0, 0, 0, 0.3);
+      opacity: 0;
+      transform: translateY(50px);
+      transition: opacity 0.9s ease, transform 0.9s ease;
+    }
+
+    .card.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .card .level-tag {
+      position: absolute;
+      top: -12px;
+      left: 18px;
+      background: #0d0a03;
+      border: 1px solid rgba(200, 180, 80, 0.4);
+      font-size: 0.6rem;
+      letter-spacing: 0.25em;
+      color: #a09040;
+      padding: 3px 12px;
+      text-transform: uppercase;
+    }
+
+    .card h2 {
+      font-size: 1.3rem;
+      color: #f0dc50;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(200, 180, 80, 0.2);
+      text-shadow: 0 0 12px rgba(240, 220, 80, 0.3);
+    }
+
+    .card p,
+    .card li {
+      font-size: 0.88rem;
+      color: #b8a860;
+      line-height: 1.7;
+    }
+
+    .card strong {
+      color: #f0dc50;
+    }
+
+    .card em {
+      color: #8a7a40;
+    }
+
+    .card ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .card ul li {
+      padding: 5px 0;
+    }
+
+    .card ul li::before {
+      content: '>';
+      color: #f0dc50;
+      margin-right: 8px;
+      font-weight: 700;
+    }
+
+    .card .tag {
+      display: inline-block;
+      background: rgba(240, 220, 80, 0.08);
+      border: 1px solid rgba(240, 220, 80, 0.25);
+      color: #d0b840;
+      font-size: 0.72rem;
+      padding: 3px 10px;
+      margin: 3px 2px;
+      letter-spacing: 0.06em;
+    }
+
+    .card .stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      text-align: center;
+    }
+
+    .card .stat-val {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #f0dc50;
+      text-shadow: 0 0 12px rgba(240, 220, 80, 0.4);
+    }
+
+    .card .stat-label {
+      font-size: 0.68rem;
+      color: #8a7a40;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .card .room-note {
+      font-size: 0.76rem;
+      color: #6a5d30;
+      font-style: italic;
+      margin-top: 16px;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       DOOR DIVIDERS
+       ═══════════════════════════════════════════════════════════════ */
+    .door-div {
+      position: relative;
+      height: 90px;
+      background: #0d0a04;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .door-div::before,
+    .door-div::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 2px;
+    }
+
+    .door-div::before {
+      top: 0;
+      background: rgba(200, 180, 80, 0.1);
+    }
+
+    .door-div::after {
+      bottom: 0;
+      background: rgba(200, 180, 80, 0.1);
+    }
+
+    .door-div span {
+      font-size: 0.6rem;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: #3a3210;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       HUD / DEPTH METER
+       ═══════════════════════════════════════════════════════════════ */
+    #depth-hud {
+      position: fixed;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .dh-label {
+      font-size: 0.55rem;
+      letter-spacing: 0.2em;
+      color: #5a4d20;
+      text-transform: uppercase;
+      writing-mode: vertical-rl;
+    }
+
+    .dh-track {
+      width: 3px;
+      height: 55vh;
+      background: rgba(200, 180, 80, 0.1);
+      border-radius: 2px;
+      position: relative;
+    }
+
+    .dh-fill {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: #a08820;
+      border-radius: 2px;
+      transition: height 0.15s;
+      box-shadow: 0 0 6px rgba(160, 136, 32, 0.5);
+    }
+
+    .dh-dot {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #f0dc50;
+      box-shadow: 0 0 8px rgba(240, 220, 80, 0.7);
+      transition: top 0.15s;
+    }
+
+    .dh-val {
+      font-size: 0.68rem;
+      color: #a08820;
+      font-weight: 700;
+    }
+
+    /* ── Entity warning text ───────────────────────────────── */
+    #entity-warn {
+      position: fixed;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.58rem;
+      color: rgba(200, 180, 80, 0);
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      z-index: 100;
+      pointer-events: none;
+      transition: color 0.8s;
+      white-space: nowrap;
+    }
+
+    #entity-warn.show {
+      color: rgba(200, 180, 80, 0.35);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       VHS GLOBAL OVERLAYS
+       ═══════════════════════════════════════════════════════════════ */
+    #vhs-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 90;
+      pointer-events: none;
+    }
+
+    #vhs-overlay .vhs-scan {
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(to bottom,
+          transparent 0, transparent 2px,
+          rgba(0, 0, 0, 0.04) 2px, rgba(0, 0, 0, 0.04) 4px);
+    }
+
+    #vhs-overlay .vhs-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.04);
+      animation: vhsLine 4s linear infinite;
+    }
+
+    @keyframes vhsLine {
+      0% {
+        top: -3px;
+      }
+
+      100% {
+        top: 100%;
+      }
+    }
+
+    /* Vignette */
+    #vignette {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      pointer-events: none;
+      background: radial-gradient(ellipse at 50% 50%,
+          transparent 50%,
+          rgba(0, 0, 0, 0.4) 100%);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       RESPONSIVE
+       ═══════════════════════════════════════════════════════════════ */
+    @media (max-width: 640px) {
+      .card {
+        padding: 24px 18px;
+      }
+
+      .card h2 {
+        font-size: 1.1rem;
+      }
+
+      .start-content h1 {
+        font-size: 2rem;
+      }
+
+      .glitch-text {
+        font-size: 2rem;
+      }
+
+      .armchair {
+        width: 140px;
+      }
+
+      .bookshelf {
+        width: 70px;
+      }
+
+      .window-row {
+        top: 4%;
+        height: 12%;
+      }
+
+      #depth-hud {
+        display: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- VHS overlays -->
+  <div id="vhs-overlay">
+    <div class="vhs-scan"></div>
+    <div class="vhs-line"></div>
+  </div>
+  <div id="vignette"></div>
+
+  <!-- Depth HUD -->
+  <div id="depth-hud">
+    <div class="dh-label">Depth</div>
+    <div class="dh-track">
+      <div class="dh-fill" id="dhFill" style="height:0%"></div>
+      <div class="dh-dot" id="dhDot" style="top:0%"></div>
+    </div>
+    <div class="dh-val" id="dhVal">0 ft</div>
+  </div>
+
+  <!-- Entity warning -->
+  <div id="entity-warn">Stay quiet. Keep moving.</div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+     CAMERA WRAPPER (shake applied here)
+     ═══════════════════════════════════════════════════════════ -->
+  <div id="camera">
+
+    <!-- ─── ROOM 0: NORMAL ROOM (with armchair, shelves, windows) ─── -->
+    <section class="room room-start" id="roomStart">
+      <!-- Room structure -->
+      <div class="room-box">
+        <div class="room-interior">
+          <div class="wall-back"></div>
+          <div class="floor-plane"></div>
+          <div class="ceiling-plane"></div>
+          <div class="wall-left"></div>
+          <div class="wall-right"></div>
+          <div class="baseboard"></div>
+          <div class="crown"></div>
+        </div>
+      </div>
+
+      <!-- Windows -->
+      <div class="window-row">
+        <div class="window-pane"></div>
+        <div class="window-pane"></div>
+        <div class="window-pane"></div>
+        <div class="window-pane"></div>
+      </div>
+
+      <!-- Light beams -->
+      <div class="light-beam light-beam-1"></div>
+      <div class="light-beam light-beam-2"></div>
+      <div class="light-beam light-rainbow"></div>
+
+      <!-- Armchair (SVG) -->
+      <svg class="armchair" viewBox="0 0 200 160" fill="none">
+        <!-- Shadow on floor -->
+        <ellipse cx="100" cy="155" rx="80" ry="6" fill="rgba(0,0,0,0.3)" />
+        <!-- Main seat body -->
+        <rect x="40" y="60" width="120" height="70" rx="8" fill="#8a7550" />
+        <rect x="40" y="60" width="120" height="70" rx="8" fill="url(#fabricPat)" opacity="0.3" />
+        <!-- Seat cushion -->
+        <rect x="48" y="75" width="104" height="35" rx="6" fill="#7a6540" />
+        <rect x="48" y="75" width="104" height="35" rx="6" fill="url(#fabricPat)" opacity="0.25" />
+        <!-- Back cushion -->
+        <rect x="45" y="30" width="110" height="45" rx="10" fill="#9a8560" />
+        <rect x="45" y="30" width="110" height="45" rx="10" fill="url(#fabricPat)" opacity="0.35" />
+        <!-- Left arm -->
+        <rect x="20" y="45" width="30" height="80" rx="8" fill="#8a7550" />
+        <rect x="15" y="40" width="40" height="20" rx="8" fill="#9a8560" />
+        <!-- Right arm -->
+        <rect x="150" y="45" width="30" height="80" rx="8" fill="#8a7550" />
+        <rect x="145" y="40" width="40" height="20" rx="8" fill="#9a8560" />
+        <!-- Legs -->
+        <rect x="45" y="128" width="12" height="25" rx="3" fill="#5a4525" />
+        <rect x="143" y="128" width="12" height="25" rx="3" fill="#5a4525" />
+        <!-- Fabric pattern def -->
+        <defs>
+          <pattern id="fabricPat" x="0" y="0" width="8" height="8" patternUnits="userSpaceOnUse">
+            <rect width="8" height="8" fill="transparent" />
+            <circle cx="4" cy="4" r="1.5" fill="rgba(255,255,255,0.08)" />
+            <circle cx="0" cy="0" r="1" fill="rgba(255,255,255,0.05)" />
+          </pattern>
+        </defs>
+      </svg>
+
+      <!-- Bookshelf (SVG) -->
+      <svg class="bookshelf" viewBox="0 0 100 180" fill="none">
+        <!-- Shadow -->
+        <ellipse cx="50" cy="177" rx="45" ry="4" fill="rgba(0,0,0,0.25)" />
+        <!-- Frame -->
+        <rect x="5" y="5" width="90" height="170" rx="2" fill="#5a4525" stroke="#4a3818" stroke-width="2" />
+        <!-- Shelves -->
+        <rect x="8" y="5" width="84" height="4" fill="#6a5530" />
+        <rect x="8" y="40" width="84" height="4" fill="#6a5530" />
+        <rect x="8" y="75" width="84" height="4" fill="#6a5530" />
+        <rect x="8" y="110" width="84" height="4" fill="#6a5530" />
+        <rect x="8" y="145" width="84" height="4" fill="#6a5530" />
+        <!-- Books row 1 -->
+        <rect x="12" y="12" width="8" height="26" rx="1" fill="#8a4040" />
+        <rect x="22" y="14" width="7" height="24" rx="1" fill="#406080" />
+        <rect x="31" y="10" width="9" height="28" rx="1" fill="#608040" />
+        <rect x="42" y="15" width="6" height="23" rx="1" fill="#806040" />
+        <rect x="50" y="11" width="10" height="27" rx="1" fill="#604080" />
+        <rect x="62" y="16" width="7" height="22" rx="1" fill="#808040" />
+        <!-- Books row 2 (fewer) -->
+        <rect x="12" y="47" width="10" height="25" rx="1" fill="#704030" />
+        <rect x="25" y="50" width="8" height="22" rx="1" fill="#305060" />
+        <rect x="36" y="46" width="7" height="26" rx="1" fill="#506030" />
+        <!-- Empty shelves below (liminal) -->
+        <rect x="15" y="80" width="12" height="27" rx="1" fill="#605030" opacity="0.4" />
+      </svg>
+
+      <!-- Dark doorway -->
+      <div class="doorway"></div>
+
+      <!-- Dust particles -->
+      <div class="dust-container" id="dustContainer"></div>
+
+      <!-- Content -->
+      <div class="start-content card visible"
+        style="opacity:1;transform:none;background:rgba(15,12,4,0.7);max-width:440px;">
+        <h1
+          style="font-family:Georgia,serif;font-size:2.8rem;color:#e8d8a8;text-shadow:0 0 30px rgba(200,180,120,0.3),0 2px 4px rgba(0,0,0,0.5);letter-spacing:0.04em;border:none;padding:0;margin:0;text-transform:none;">
+          Prashant</h1>
+        <p class="subtitle"
+          style="font-size:0.82rem;color:#a09060;letter-spacing:0.2em;text-transform:uppercase;margin-top:6px;">Aspiring
+          Embedded Systems Engineer</p>
+        <p style="margin-top:18px;font-size:0.82rem;color:#807040;">
+          A normal room. Sunlight through the windows.<br>
+          An old armchair. Dusty shelves. A dark doorway.<br><br>
+          Everything looks fine. But something feels… off.
+        </p>
+        <p style="margin-top:22px;font-size:0.7rem;color:#605530;letter-spacing:0.15em;animation:pulse 2.5s infinite;">
+          ↓ SCROLL DOWN TO NOCLIP ↓
+        </p>
+      </div>
+    </section>
+
+    <!-- ─── NOCLIP TRANSITION ──────────────────────────────────────── -->
+    <section class="room room-noclip" id="roomNoclip">
+      <div class="scanlines"></div>
+      <div class="vhs-bar"></div>
+      <div class="floor-dissolve" id="floorDissolve"></div>
+      <div class="noclip-inner">
+        <div class="glitch-text">N O — C L I P</div>
+        <div class="noclip-sub">REALITY BREACH DETECTED</div>
+        <p class="noclip-desc">
+          You tripped. The floor gave way.<br>
+          You're falling through the geometry.<br>
+          The fluorescent hum fills everything.
+        </p>
+      </div>
+    </section>
+
+    <!-- ─── LEVEL 0: THE LOBBY — About Me ──────────────────────────── -->
+    <div class="door-div"><span>Entering Level 0 — "The Lobby"</span></div>
+
+    <section class="room backroom br-level0" id="level0">
+      <div class="br-wallpaper">
+        <div class="br-wall-back"></div>
+        <div class="br-stains"></div>
+        <div class="br-floor"></div>
+        <div class="br-ceiling">
+          <div class="fl-bar" style="left:20%"></div>
+          <div class="fl-bar flicker" style="left:50%;transform:translateX(-50%) translateY(-50%)"></div>
+          <div class="fl-bar" style="right:15%"></div>
+        </div>
+        <div class="br-glow"></div>
+      </div>
+      <div class="dust-container dust-gen"></div>
+      <div class="card" data-reveal>
+        <div class="level-tag">Level 0 — The Lobby</div>
+        <h2>📋 About Me</h2>
+        <p>
+          I'm <strong>Prashant</strong>, an aspiring
+          <strong>Embedded Systems Engineer</strong> driven by a deep fascination
+          with hardware-software interfaces.
+        </p>
+        <br>
+        <p>
+          I love working close to the metal — writing firmware, designing circuits,
+          interfacing microcontrollers with the real world. From blinking LEDs to
+          complex RTOS-based systems, I'm building my way up.
+        </p>
+        <p class="room-note">
+          ~600 million sq. ft. of damp carpet. The hum never stops.
+        </p>
+      </div>
+    </section>
+
+    <!-- ─── LEVEL 1: Skills ────────────────────────────────────────── -->
+    <div class="door-div"><span>Entering Level 1 — "Electrical Station"</span></div>
+
+    <section class="room backroom br-level1" id="level1">
+      <div class="br-wallpaper">
+        <div class="br-wall-back"></div>
+        <div class="br-stains"></div>
+        <div class="br-floor"></div>
+        <div class="br-ceiling">
+          <div class="fl-bar flicker2" style="left:25%"></div>
+          <div class="fl-bar" style="left:55%"></div>
+          <div class="fl-bar flicker" style="right:12%"></div>
+        </div>
+        <div class="br-glow"></div>
+      </div>
+      <div class="dust-container dust-gen"></div>
+
+      <!-- Entity: eyes in the far corner -->
+      <div class="entity-eyes" data-entity data-depth="0.25" style="bottom:48%;left:8%;">
+        <div class="eye" style="left:0;top:0"></div>
+        <div class="eye" style="left:12px;top:0"></div>
+      </div>
+
+      <div class="card" data-reveal>
+        <div class="level-tag">Level 1 — Electrical Station</div>
+        <h2>⚡ Skills &amp; Technologies</h2>
+        <p style="margin-bottom:10px;">Tools found scattered across the rooms:</p>
+        <div>
+          <span class="tag">C / C++</span>
+          <span class="tag">Embedded C</span>
+          <span class="tag">Python</span>
+          <span class="tag">Arduino</span>
+          <span class="tag">Raspberry Pi</span>
+          <span class="tag">STM32</span>
+          <span class="tag">ESP32</span>
+          <span class="tag">RTOS</span>
+          <span class="tag">I²C / SPI / UART</span>
+          <span class="tag">PCB Design</span>
+          <span class="tag">Git &amp; GitHub</span>
+          <span class="tag">Linux</span>
+          <span class="tag">KiCad</span>
+          <span class="tag">MATLAB</span>
+        </div>
+        <p class="room-note">
+          The lights flicker more here. Something drips from the ceiling.
+        </p>
+      </div>
+    </section>
+
+    <!-- ─── LEVEL 2: Experience ────────────────────────────────────── -->
+    <div class="door-div"><span>Entering Level 2 — "The Archives"</span></div>
+
+    <section class="room backroom br-level2" id="level2">
+      <div class="br-wallpaper">
+        <div class="br-wall-back"></div>
+        <div class="br-stains"></div>
+        <div class="br-floor"></div>
+        <div class="br-ceiling">
+          <div class="fl-bar flicker" style="left:18%"></div>
+          <div class="fl-bar flicker2" style="left:52%"></div>
+          <div class="fl-bar flicker" style="right:18%"></div>
+        </div>
+        <div class="br-glow"></div>
+      </div>
+      <div class="dust-container dust-gen"></div>
+
+      <!-- Entity: standing figure silhouette far right -->
+      <div class="entity" data-entity data-depth="0.45" style="bottom:38%;right:6%;">
+        <svg class="entity-standing" viewBox="0 0 40 120" fill="none">
+          <!-- Head -->
+          <ellipse cx="20" cy="12" rx="8" ry="10" fill="rgba(10,8,2,0.85)" />
+          <!-- Body -->
+          <rect x="12" y="22" width="16" height="45" rx="5" fill="rgba(10,8,2,0.8)" />
+          <!-- Left arm -->
+          <rect x="4" y="26" width="8" height="38" rx="4" fill="rgba(10,8,2,0.75)" />
+          <!-- Right arm -->
+          <rect x="28" y="26" width="8" height="38" rx="4" fill="rgba(10,8,2,0.75)" />
+          <!-- Left leg -->
+          <rect x="12" y="65" width="8" height="48" rx="3" fill="rgba(10,8,2,0.8)" />
+          <!-- Right leg -->
+          <rect x="22" y="65" width="8" height="48" rx="3" fill="rgba(10,8,2,0.8)" />
+        </svg>
+      </div>
+
+      <div class="card" data-reveal>
+        <div class="level-tag">Level 2 — The Archives</div>
+        <h2>📂 Experience</h2>
+        <ul>
+          <li>
+            <strong>Git &amp; Version Control</strong><br>
+            <span style="font-size:0.82rem">Proficient in Git workflows — branching, merging, rebasing,
+              pull requests, and collaborative development on GitHub.</span>
+          </li>
+          <br>
+          <li>
+            <strong>Hacktoberfest Contributor</strong><br>
+            <span style="font-size:0.82rem">Active open-source contributor during Hacktoberfest — submitted
+              meaningful PRs, fixed bugs, improved docs, and collaborated with
+              maintainers worldwide.</span>
+          </li>
+          <br>
+          <li>
+            <strong>Embedded Systems Projects</strong><br>
+            <span style="font-size:0.82rem">Designed and built firmware for microcontroller-based systems,
+              interfacing sensors, actuators, and communication protocols.</span>
+          </li>
+        </ul>
+        <p class="room-note">
+          Filing cabinets line the walls. Some drawers are open. Don't look behind you.
+        </p>
+      </div>
+    </section>
+
+    <!-- ─── LEVEL 3: Projects ──────────────────────────────────────── -->
+    <div class="door-div"><span>Entering Level 3 — "The Machine Room"</span></div>
+
+    <section class="room backroom br-level3" id="level3">
+      <div class="br-wallpaper">
+        <div class="br-wall-back"></div>
+        <div class="br-stains"></div>
+        <div class="br-floor"></div>
+        <div class="br-ceiling">
+          <div class="fl-bar flicker2" style="left:35%"></div>
+          <div class="fl-bar flicker" style="right:30%"></div>
+        </div>
+        <div class="br-glow"></div>
+      </div>
+      <div class="dust-container dust-gen"></div>
+
+      <!-- Pipes -->
+      <div class="pipe pipe-h" style="top:15%;left:-2%;width:45%"></div>
+      <div class="pipe pipe-h" style="top:78%;right:-2%;width:40%"></div>
+      <div class="pipe pipe-v" style="top:15%;left:42%;height:63%"></div>
+
+      <!-- Entity: crouching in left corner -->
+      <div class="entity" data-entity data-depth="0.60" style="bottom:38%;left:4%;">
+        <svg class="entity-crouching" viewBox="0 0 60 80" fill="none">
+          <ellipse cx="25" cy="15" rx="10" ry="12" fill="rgba(8,6,1,0.9)" />
+          <ellipse cx="30" cy="45" rx="22" ry="25" fill="rgba(8,6,1,0.85)" />
+          <rect x="5" y="55" width="10" height="22" rx="4" fill="rgba(8,6,1,0.8)" />
+          <rect x="42" y="55" width="10" height="22" rx="4" fill="rgba(8,6,1,0.8)" />
+          <!-- Faint eyes -->
+          <circle cx="22" cy="13" r="1.5" fill="rgba(255,248,160,0.3)" />
+          <circle cx="29" cy="13" r="1.5" fill="rgba(255,248,160,0.3)" />
+        </svg>
+      </div>
+
+      <!-- Entity: eyes in far dark area -->
+      <div class="entity-eyes" data-entity data-depth="0.65" style="bottom:55%;right:10%;">
+        <div class="eye" style="left:0;top:0"></div>
+        <div class="eye" style="left:14px;top:1px"></div>
+      </div>
+
+      <div class="card" data-reveal>
+        <div class="level-tag">Level 3 — The Machine Room</div>
+        <h2>🔧 Projects</h2>
+        <ul>
+          <li>
+            <strong>IoT Weather Station</strong><br>
+            <span style="font-size:0.82rem">ESP32-based system with temp, humidity &amp; pressure sensors,
+              pushing real-time data via MQTT to a web dashboard.</span>
+          </li>
+          <br>
+          <li>
+            <strong>Line-Following Robot</strong><br>
+            <span style="font-size:0.82rem">Autonomous bot using IR sensors + PID control on Arduino.
+              Built, tested, and iterated on hardware and software together.</span>
+          </li>
+          <br>
+          <li>
+            <strong>Open Source Contributions</strong><br>
+            <span style="font-size:0.82rem">Contributed to firmware libraries and dev tools during Hacktoberfest.
+              Collaborated on GitHub with developers worldwide.</span>
+          </li>
+        </ul>
+        <p class="room-note">
+          Pipes rattle. Something is running the machines. It isn't electricity.
+        </p>
+      </div>
+    </section>
+
+    <!-- ─── LEVEL 4: Contact — The End ─────────────────────────────── -->
+    <div class="door-div"><span>Entering Level 4 — "The Exit?"</span></div>
+
+    <section class="room backroom br-level4" id="level4">
+      <div class="br-wallpaper">
+        <div class="br-wall-back"></div>
+        <div class="br-stains"></div>
+        <div class="br-floor"></div>
+        <div class="br-ceiling">
+          <div class="fl-bar flicker" style="left:50%;transform:translateX(-50%) translateY(-50%)"></div>
+        </div>
+        <div class="br-glow"></div>
+      </div>
+      <div class="dust-container dust-gen"></div>
+
+      <!-- Entity: tall standing figure behind card -->
+      <div class="entity" data-entity data-depth="0.82" style="bottom:36%;left:50%;transform:translateX(180px);">
+        <svg width="45" height="150" viewBox="0 0 45 150" fill="none">
+          <ellipse cx="22" cy="14" rx="9" ry="12" fill="rgba(5,4,1,0.9)" />
+          <rect x="12" y="26" width="20" height="55" rx="6" fill="rgba(5,4,1,0.85)" />
+          <rect x="2" y="30" width="10" height="45" rx="5" fill="rgba(5,4,1,0.8)" />
+          <rect x="32" y="30" width="10" height="45" rx="5" fill="rgba(5,4,1,0.8)" />
+          <rect x="12" y="78" width="9" height="65" rx="3" fill="rgba(5,4,1,0.85)" />
+          <rect x="24" y="78" width="9" height="65" rx="3" fill="rgba(5,4,1,0.85)" />
+        </svg>
+      </div>
+
+      <!-- Entity smile -->
+      <div class="entity-smile" data-entity data-depth="0.90" style="bottom:60%;left:8%;">
+        =)
+      </div>
+
+      <!-- Entity eyes -->
+      <div class="entity-eyes" data-entity data-depth="0.85" style="bottom:52%;left:20%;">
+        <div class="eye" style="left:0;top:0"></div>
+        <div class="eye" style="left:16px;top:-1px"></div>
+      </div>
+      <div class="entity-eyes" data-entity data-depth="0.88" style="bottom:44%;right:14%;">
+        <div class="eye" style="left:0;top:0"></div>
+        <div class="eye" style="left:10px;top:2px"></div>
+      </div>
+
+      <div class="card" data-reveal>
+        <div class="level-tag">Level 4 — The Exit?</div>
+        <h2>📡 Contact &amp; Connect</h2>
+        <p>You made it this far. Here's how to find me on the other side:</p>
+        <br>
+        <ul>
+          <li>📧 <strong>prashant@example.com</strong></li>
+          <li>🐙 <strong>github.com/prashant</strong></li>
+          <li>💼 <strong>linkedin.com/in/prashant</strong></li>
+        </ul>
+        <br>
+        <div class="stat-grid">
+          <div>
+            <div class="stat-val">∞</div>
+            <div class="stat-label">Curiosity</div>
+          </div>
+          <div>
+            <div class="stat-val">24/7</div>
+            <div class="stat-label">Debugging</div>
+          </div>
+        </div>
+        <p class="room-note">
+          A door ahead. It might lead back to reality.<br>
+          Or maybe… deeper. =)
+        </p>
+      </div>
+    </section>
+
+    <!-- ─── END ────────────────────────────────────────────────────── -->
+    <div class="door-div" style="height:160px;flex-direction:column;gap:10px;">
+      <span>End of known levels</span>
+      <span style="color:#201a08;font-size:0.5rem;letter-spacing:0.4em;">
+        If you're reading this, you're still here.
+      </span>
+      <span style="color:#151005;font-size:0.48rem;letter-spacing:0.2em;">
+        © 2026 Prashant — Crafted in the Backrooms
+      </span>
+    </div>
+
+  </div><!-- end #camera -->
+
+  <!-- ═══════════════════════════════════════════════════════════
+     JAVASCRIPT
+     ═══════════════════════════════════════════════════════════ -->
+  <script>
+    (function () {
+      'use strict';
+
+      // ── Camera shake system ─────────────────────────────────────
+      const camera = document.getElementById('camera');
+      let lastScrollY = window.scrollY;
+      let lastTime = performance.now();
+      let shakeX = 0, shakeY = 0, shakeR = 0;
+      let velocity = 0;
+      // Perlin-ish noise approach with sine mixing
+      let noiseT = 0;
+
+      function noise(t) {
+        return Math.sin(t * 1.3) * 0.5
+          + Math.sin(t * 3.7) * 0.25
+          + Math.sin(t * 7.1) * 0.15
+          + Math.sin(t * 13.3) * 0.1;
+      }
+
+      function updateShake() {
+        const now = performance.now();
+        const dt = Math.max(now - lastTime, 1);
+        const dy = window.scrollY - lastScrollY;
+        lastScrollY = window.scrollY;
+        lastTime = now;
+
+        // Velocity (pixels/ms) → intensity
+        const rawVel = Math.abs(dy / dt);
+        velocity = velocity * 0.85 + rawVel * 0.15; // smooth
+
+        // Shake intensity scales with speed — caps out
+        const intensity = Math.min(velocity * 12, 8);
+
+        // Advance noise time
+        noiseT += dt * 0.005;
+
+        // Shake offsets
+        const targetX = noise(noiseT) * intensity;
+        const targetY = noise(noiseT + 100) * intensity * 0.7;
+        const targetR = noise(noiseT + 200) * intensity * 0.12;
+
+        // Lerp towards target (smoothed jitter)
+        shakeX = shakeX * 0.6 + targetX * 0.4;
+        shakeY = shakeY * 0.6 + targetY * 0.4;
+        shakeR = shakeR * 0.6 + targetR * 0.4;
+
+        // Always apply a tiny ambient sway even when still
+        const ambientX = Math.sin(noiseT * 0.4) * 0.4;
+        const ambientY = Math.sin(noiseT * 0.6 + 1) * 0.3;
+        const ambientR = Math.sin(noiseT * 0.3 + 2) * 0.04;
+
+        camera.style.transform =
+          `translate(${shakeX + ambientX}px, ${shakeY + ambientY}px) rotate(${shakeR + ambientR}deg)`;
+
+        requestAnimationFrame(updateShake);
+      }
+      requestAnimationFrame(updateShake);
+
+      // ── Depth meter ──────────────────────────────────────────────
+      const dhFill = document.getElementById('dhFill');
+      const dhDot = document.getElementById('dhDot');
+      const dhVal = document.getElementById('dhVal');
+
+      function getMaxScroll() {
+        return document.documentElement.scrollHeight - window.innerHeight;
+      }
+
+      window.addEventListener('scroll', () => {
+        const pct = Math.min(window.scrollY / getMaxScroll(), 1) * 100;
+        dhFill.style.height = pct + '%';
+        dhDot.style.top = pct + '%';
+        dhVal.textContent = Math.round(pct * 6) + ' ft';
+      }, { passive: true });
+
+      // ── Card reveal on scroll ────────────────────────────────────
+      const cards = document.querySelectorAll('[data-reveal]');
+      const cardObs = new IntersectionObserver((entries) => {
+        entries.forEach(e => {
+          if (e.isIntersecting) e.target.classList.add('visible');
+        });
+      }, { threshold: 0.15 });
+      cards.forEach(c => cardObs.observe(c));
+
+      // ── Entity reveal based on scroll depth ──────────────────────
+      const entities = document.querySelectorAll('[data-entity]');
+
+      window.addEventListener('scroll', () => {
+        const pct = window.scrollY / getMaxScroll();
+        entities.forEach(ent => {
+          const threshold = parseFloat(ent.dataset.depth);
+          if (pct >= threshold) {
+            ent.classList.add('visible');
+          } else {
+            ent.classList.remove('visible');
+          }
+        });
+      }, { passive: true });
+
+      // ── Entity warning messages ──────────────────────────────────
+      const warnEl = document.getElementById('entity-warn');
+      const msgs = [
+        'Stay quiet. Keep moving.',
+        'Do not look behind you.',
+        'The hum is getting louder.',
+        'Level ? — depth unknown',
+        'Something is following you.',
+        'Are you sure you want to continue?',
+        'You are not alone here.',
+        'Don\'t trust the lights.',
+        'It sees you. =)',
+        'There is no exit.',
+      ];
+      let warnTimer;
+      setInterval(() => {
+        const pct = window.scrollY / getMaxScroll();
+        if (pct > 0.2) {
+          warnEl.textContent = msgs[Math.floor(Math.random() * msgs.length)];
+          warnEl.classList.add('show');
+          clearTimeout(warnTimer);
+          warnTimer = setTimeout(() => warnEl.classList.remove('show'), 3000);
+        }
+      }, 5500);
+
+      // ── Dust particles ───────────────────────────────────────────
+      function spawnDust(container, count) {
+        for (let i = 0; i < count; i++) {
+          const d = document.createElement('div');
+          d.className = 'dust';
+          const size = 1 + Math.random() * 2;
+          d.style.cssText = `
+        width:${size}px; height:${size}px;
+        top:${20 + Math.random() * 60}%;
+        left:${Math.random() * 100}%;
+        animation-duration:${4 + Math.random() * 8}s;
+        animation-delay:${Math.random() * 6}s;
+      `;
+          container.appendChild(d);
+        }
+      }
+
+      // Start room dust
+      const startDust = document.getElementById('dustContainer');
+      if (startDust) spawnDust(startDust, 30);
+
+      // Backroom dust
+      document.querySelectorAll('.dust-gen').forEach(c => spawnDust(c, 20));
+
+      // ── Noclip floor dissolve ────────────────────────────────────
+      const dissolveEl = document.getElementById('floorDissolve');
+      if (dissolveEl) {
+        // Create striped dissolve bars
+        for (let i = 0; i < 12; i++) {
+          const s = document.createElement('div');
+          s.className = 'dissolve-stripe';
+          const h = 100 / 12;
+          s.style.top = (i * h) + '%';
+          s.style.height = h + '%';
+          s.style.transitionDelay = (i * 0.08) + 's';
+          dissolveEl.appendChild(s);
+        }
+      }
+      const noclipRoom = document.getElementById('roomNoclip');
+      const dissolveStripes = dissolveEl ? dissolveEl.querySelectorAll('.dissolve-stripe') : [];
+      const noclipObs = new IntersectionObserver((entries) => {
+        entries.forEach(e => {
+          if (e.isIntersecting) {
+            dissolveStripes.forEach(s => s.style.opacity = '1');
+          }
+        });
+      }, { threshold: 0.35 });
+      if (noclipRoom) noclipObs.observe(noclipRoom);
+
+      // ── Subtle room parallax ─────────────────────────────────────
+      window.addEventListener('scroll', () => {
+        document.querySelectorAll('.br-wallpaper').forEach(bg => {
+          const rect = bg.parentElement.getBoundingClientRect();
+          const offset = rect.top * 0.03;
+          bg.style.transform = `translateY(${offset}px)`;
+        });
+      }, { passive: true });
+
+    })();
+  </script>
+</body>
+
+</html>
